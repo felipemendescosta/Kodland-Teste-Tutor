@@ -153,6 +153,13 @@ TILE_MAPPING = {
 for i in range(132):
     TILE_MAPPING[i] = f'tiles/tile_{i:04d}'
 
+HOUSE_MAPPING = [
+    [52,53,54,55],
+    [64,65,66,67],
+    [76,77,78,79],
+    [88,89,90,91]
+]
+
 # --- CONFIGURACOES DE ATAQUE ---
 is_attacking = False        # O jogador esta atacando agora? Comeca como Falso.
 attack_timer = 0.0          # Cronometro para a duracao da animacao de ataque.
@@ -174,13 +181,30 @@ ENEMY_SPAWN_TIME = 3.0 # Tempo em segundos para um novo inimigo aparecer
 CHAO_LAYOUT = [[0 for _ in range(MAP_WIDTH_IN_TILES)] for _ in range(MAP_HEIGHT_IN_TILES)]
 ESTRUTURAS_LAYOUT = [[-1 for _ in range(MAP_WIDTH_IN_TILES)] for _ in range(MAP_HEIGHT_IN_TILES)]
 
-# 2. Agora, modificamos o mapa GRANDE para adicionar a casa.
+# --- DEFINICAO DAS PLANTAS DOS OBJETOS ---
+def desenhar_objeto_por_id(layout_principal, planta_numerica, top_x, top_y):
+    """
+    Versao simplificada que desenha um objeto usando uma planta com IDs de tile.
+    - layout_principal: A matriz onde vamos desenhar (ex: ESTRUTURAS_LAYOUT).
+    - planta_numerica: A lista de listas com os IDs dos tiles.
+    - top_x, top_y: A posicao (coluna, linha) do canto superior esquerdo do objeto.
+    """
+    altura_objeto = len(planta_numerica)
+    largura_objeto = len(planta_numerica[0])
 
-# ESTRUTURAS_LAYOUT[5][5] = 80
-# ESTRUTURAS_LAYOUT[5][6] = 81
-# ESTRUTURAS_LAYOUT[5][7] = 82
-# ESTRUTURAS_LAYOUT[6][5] = 100
-# ESTRUTURAS_LAYOUT[6][6] = 101
+    for y in range(altura_objeto):
+        for x in range(largura_objeto):
+            # A GRANDE MUDANCA: pegamos o ID diretamente da planta!
+            tile_id = planta_numerica[y][x]
+            
+            # Se o ID nao for -1 (transparente), desenhe
+            if tile_id != -1:
+                map_x = top_x + x
+                map_y = top_y + y
+                
+                if 0 <= map_y < len(layout_principal) and 0 <= map_x < len(layout_principal[0]):
+                    layout_principal[map_y][map_x] = tile_id
+
 player = Actor('heroi/persona_0087', anchor=('center', 'bottom'))
 
 # 3. Definimos a posicao inicial do personagem na tela (x, y).
@@ -424,5 +448,7 @@ def on_key_down(key):
 
 # Agenda a funcao spawn_inimigo para ser chamada a cada ENEMY_SPAWN_TIME segundos
 clock.schedule_interval(spawn_inimigo, ENEMY_SPAWN_TIME)
+# Carimba o castelo na posicao (coluna=10, linha=5)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=10, top_y=5)
 # Inicia o jogo
 pgzrun.go()
