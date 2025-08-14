@@ -159,12 +159,39 @@ HOUSE_MAPPING = [
     [76,77,78,79],
     [88,89,90,91]
 ]
+HOUSE_ROCK_MAPPING = [
+    [48,49,50,51],
+    [60,61,62,63],
+    [72,73,74,75],
+    [84,85,86,87],
+]
 CASTLE_MAPPING = [
     [48,49,50,51,52,53,54],
     [60,61,62,63,64,65,66],
     [96,97,98,99,100,101,102],
     [108,109,110,111,112,113,114],
     [120,121,122,123,124,125,126],
+]
+ROAD_MAPPING = [
+    [12,13,14],
+    [24,25,26],
+    [36,37,38],
+]
+TREE_GREEN_MAPPING = [
+    [6, 7, 8],
+    [18, 19, 20],
+    [30, 31, 32],
+]
+TREE_YELLOW_MAPPING = [
+    [9, 10, 11],
+    [21, 22, 23],
+    [33, 34, 35],
+    [-1, 47, -1],
+]
+BARN_MAPPING = [
+    [44, 45, 46],
+    [56, 57, 58],
+    [68, 69, 70],
 ]
 
 # --- CONFIGURACOES DE ATAQUE ---
@@ -457,6 +484,18 @@ def on_key_down(key):
 clock.schedule_interval(spawn_inimigo, ENEMY_SPAWN_TIME)
 # Carimba o castelo na posicao (coluna=10, linha=5)
 desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=10, top_y=5)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=15, top_y=10)
 desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=20, top_y=10)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=15)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=35, top_y=20)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=40, top_y=15)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, TREE_GREEN_MAPPING, top_x=20, top_y=5)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, TREE_YELLOW_MAPPING, top_x=9, top_y=15)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=5, top_y=8)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=3, top_y=2)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_ROCK_MAPPING, top_x=8, top_y=35)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=25, top_y=22)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=30, top_y=32)
+desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=2)
 # Inicia o jogo
 pgzrun.go()
