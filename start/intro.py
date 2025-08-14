@@ -1,6 +1,7 @@
 
 import pgzrun
 from pygame import Rect
+import random
 
 # --- CONFIGURAÇÕES GERAIS ---
 WIDTH = 800
@@ -162,6 +163,11 @@ ATTACK_THRUST = 25          # Quantos pixels a arma avanca durante o ataque.
 SWING_START_ANGLE = -50  # Angulo inicial do ataque
 SWING_END_ANGLE = 90     # Angulo final do ataque
 
+# --- CONFIGURACOES DOS INIMIGOS ---
+inimigos = []  # Lista vazia para guardar todos os Actors dos inimigos
+ENEMY_SPEED = 50  # Velocidade dos inimigos, um pouco mais lenta que o jogador
+ENEMY_SPAWN_TIME = 3.0 # Tempo em segundos para um novo inimigo aparecer
+
 
 # --- CRIAÇÃO DAS CAMADAS DO MAPA ---
 # 1. Criamos os mapas GRANDES, do tamanho da tela.
@@ -175,7 +181,7 @@ ESTRUTURAS_LAYOUT = [[-1 for _ in range(MAP_WIDTH_IN_TILES)] for _ in range(MAP_
 # ESTRUTURAS_LAYOUT[5][7] = 82
 # ESTRUTURAS_LAYOUT[6][5] = 100
 # ESTRUTURAS_LAYOUT[6][6] = 101
-player = Actor('moobs/persona_0087', anchor=('center', 'bottom'))
+player = Actor('heroi/persona_0087', anchor=('center', 'bottom'))
 
 # 3. Definimos a posicao inicial do personagem na tela (x, y).
 player.pos = (100, 200)
@@ -224,6 +230,9 @@ def draw_game():
     draw_layer(ESTRUTURAS_LAYOUT)
     player.draw()
     arma.draw()
+    # Desenha cada inimigo na lista
+    for inimigo in inimigos:
+        inimigo.draw()
 
 def draw_menu():
     screen.fill((255, 255, 255))
@@ -244,6 +253,39 @@ def draw():
         draw_menu()
     elif game_state == "jogo":
         draw_game()
+
+def spawn_inimigo():
+    """
+    Cria um novo inimigo em uma posicao aleatoria fora da tela e o adiciona a lista.
+    """
+    # Escolha uma imagem de inimigo aleatoriamente (ajuste os numeros conforme seus arquivos)
+    # Assumindo que seus inimigos se chamam persona_0000.png, persona_0001.png, etc.
+    numero_inimigo = random.randint(10, 24) # Exemplo: escolhe um numero entre 0 e 50
+    imagem_inimigo = f'moobs/tile_{numero_inimigo:04d}'
+
+    # Cria o Actor do inimigo
+    inimigo = Actor(imagem_inimigo)
+
+    # Define uma posicao de nascimento aleatoria fora da tela
+    lado = random.choice(['topo', 'baixo', 'esquerda', 'direita'])
+
+    if lado == 'topo':
+        inimigo.x = random.randint(0, WIDTH)
+        inimigo.y = -50 # Comeca um pouco acima da tela
+    elif lado == 'baixo':
+        inimigo.x = random.randint(0, WIDTH)
+        inimigo.y = HEIGHT + 50 # Comeca um pouco abaixo da tela
+    elif lado == 'esquerda':
+        inimigo.x = -50
+        inimigo.y = random.randint(0, HEIGHT)
+    elif lado == 'direita':
+        inimigo.x = WIDTH + 50
+        inimigo.y = random.randint(0, HEIGHT)
+
+    # Adiciona o novo inimigo a lista principal de inimigos
+    inimigos.append(inimigo)
+    print(f"Novo inimigo criado em ({inimigo.x}, {inimigo.y})") # Mensagem de teste
+
 def update(dt):
     """
     Esta funcao e chamada a cada frame pelo Pygame Zero.
@@ -294,20 +336,20 @@ def update(dt):
             # --- LOGICA DE MOVIMENTO DO PERSONAGEM ---
             if keyboard.left:
                 player.x -= PLAYER_SPEED * dt
-                player.image = 'moobs/persona_0087' # Seu sprite de personagem
+                player.image ='heroi/persona_0087' # Seu sprite de personagem
                 player_direction = 'esquerda'
             elif keyboard.right:
                 player.x += PLAYER_SPEED * dt
-                player.image = 'moobs/persona_0087'
+                player.image ='heroi/persona_0087'
                 player_direction = 'direita'
 
             if keyboard.up:
                 player.y -= PLAYER_SPEED * dt
-                player.image = 'moobs/persona_0087'
+                player.image ='heroi/persona_0087'
                 player_direction = 'costas'
             elif keyboard.down:
                 player.y += PLAYER_SPEED * dt
-                player.image = 'moobs/persona_0087'
+                player.image ='heroi/persona_0087'
                 player_direction = 'frente'
 
             # --- ATUALIZACAO DA ARMA (EM POSICAO DE DESCANSO) ---
@@ -327,6 +369,21 @@ def update(dt):
             elif player_direction == 'esquerda':
                 arma.image = 'itens/axe_0118'
                 arma.flip_x = True
+    # --- ATUALIZACAO DOS INIMIGOS ---
+        for inimigo in inimigos:
+            # Calcula a direcao para o jogador
+            direcao_x = player.x - inimigo.x
+            direcao_y = player.y - inimigo.y
+
+            # Normaliza o vetor de direcao (para que a velocidade seja constante)
+            distancia = (direcao_x**2 + direcao_y**2)**0.5
+            if distancia > 0:
+                direcao_x /= distancia
+                direcao_y /= distancia
+
+            # Move o inimigo na direcao do jogador
+            inimigo.x += direcao_x * ENEMY_SPEED * dt
+            inimigo.y += direcao_y * ENEMY_SPEED * dt
 
 # --- FUNÇÕES DE INPUT (EVENTOS) ---
 def on_mouse_down(pos):
@@ -365,5 +422,7 @@ def on_key_down(key):
             attack_timer = ATTACK_DURATION
             attack_cooldown = ATTACK_COOLDOWN_TIME
 
+# Agenda a funcao spawn_inimigo para ser chamada a cada ENEMY_SPAWN_TIME segundos
+clock.schedule_interval(spawn_inimigo, ENEMY_SPAWN_TIME)
 # Inicia o jogo
 pgzrun.go()
