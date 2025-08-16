@@ -1,4 +1,3 @@
-
 import pgzrun
 from pygame import Rect
 import random
@@ -8,7 +7,9 @@ WIDTH = 800
 HEIGHT = 700
 TILE_SIZE = 16
 PLAYER_SPEED = 120 # pixels por segundo
-
+# --- CONFIGURACOES DE SOM ---
+footstep_timer = 0.0
+FOOTSTEP_INTERVAL = 0.4 # Intervalo entre os sons de passo, em segundos
 # --- CALCULOS DO MAPA ---
 MAP_WIDTH_IN_TILES = WIDTH // TILE_SIZE
 MAP_HEIGHT_IN_TILES = HEIGHT // TILE_SIZE + 1
@@ -193,8 +194,40 @@ BARN_MAPPING = [
     [56, 57, 58],
     [68, 69, 70],
 ]
+# ---CONFIGURACAO DE COLISAO---
+TILES_SOLIDOS = {
+    #pecas de uma casa
+    52,53,54,55,
+    64,65,66,67,
+    76,77,78,79,
+    88,89,90,91,
+    #pecas de uma casa de pedra
+    48,49,50,51,
+    60,61,62,63,
+    72,73,74,75,
+    84,85,86,87,
+    #pecas de uma arvore
+    6, 7, 8, 18, 19, 20,30, 31, 32,
+    #pecas de um castelo
+    48,49,50,51,52,53,54,
+    61,62,63,64,65,66,108,60,
+    96,97,98,99,100,101,102,
+    109,110,111,112,113,114,
+    120,121,122,123,124,125,126,
+    #celeiro
+    44, 45, 46,
+    56, 57, 58,
+    68, 69, 70,
+    #pecas de arvore amarela
+    9, 10, 11, 21, 22, 23,
+    33, 34, 35,
+    47,
+    #pecas de arvore verde
+    6, 7, 8, 18, 19, 20,
+    30, 31, 32,
 
-# --- CONFIGURACOES DE ATAQUE ---
+}
+# --- CONFIGURACOES DE ATAQUE 
 is_attacking = False        # O jogador esta atacando agora? Comeca como Falso.
 attack_timer = 0.0          # Cronometro para a duracao da animacao de ataque.
 ATTACK_DURATION = 0.3      # Duracao do ataque em segundos (ajuste para ficar mais rapido ou lento).
@@ -314,45 +347,61 @@ def draw():
 
 def spawn_inimigo():
     """
-    Cria um novo inimigo em uma posicao aleatoria fora da tela e o adiciona a lista.
+    Cria um novo inimigo em uma posicao aleatoria NAS BORDAS da tela.
     """
-    # Escolha uma imagem de inimigo aleatoriamente (ajuste os numeros conforme seus arquivos)
-    # Assumindo que seus inimigos se chamam persona_0000.png, persona_0001.png, etc.
-    numero_inimigo = random.randint(10, 24) # Exemplo: escolhe um numero entre 0 e 50
+    numero_inimigo = random.randint(10, 24)
     imagem_inimigo = f'moobs/tile_{numero_inimigo:04d}'
-
-    # Cria o Actor do inimigo
     inimigo = Actor(imagem_inimigo)
 
-    # Define uma posicao de nascimento aleatoria fora da tela
     lado = random.choice(['topo', 'baixo', 'esquerda', 'direita'])
 
+    # Agora as posicoes sao NAS BORDAS da tela, nao fora
     if lado == 'topo':
         inimigo.x = random.randint(0, WIDTH)
-        inimigo.y = -50 # Comeca um pouco acima da tela
+        inimigo.y = 0 # Borda de cima
     elif lado == 'baixo':
         inimigo.x = random.randint(0, WIDTH)
-        inimigo.y = HEIGHT + 50 # Comeca um pouco abaixo da tela
+        inimigo.y = HEIGHT # Borda de baixo
     elif lado == 'esquerda':
-        inimigo.x = -50
+        inimigo.x = 0 # Borda da esquerda
         inimigo.y = random.randint(0, HEIGHT)
     elif lado == 'direita':
-        inimigo.x = WIDTH + 50
+        inimigo.x = WIDTH # Borda da direita
         inimigo.y = random.randint(0, HEIGHT)
 
-    # Adiciona o novo inimigo a lista principal de inimigos
+    # Verifica se o local de nascimento e solido. Se for, tenta de novo.
+    if verificar_colisao(inimigo.x, inimigo.y):
+        print("Local de spawn bloqueado. Tentando de novo no proximo ciclo.")
+        return # Pula a criacao deste inimigo e espera o proximo ciclo
+
     inimigos.append(inimigo)
-    print(f"Novo inimigo criado em ({inimigo.x}, {inimigo.y})") # Mensagem de teste
+    print(f"Novo inimigo criado em ({int(inimigo.x)}, {int(inimigo.y)})")
+
+def verificar_colisao(x, y):
+    """
+    Verifica se a coordenada de pixel (x, y) esta sobre um tile solido.
+    Retorna True se houver colisao, False se nao houver.
+    """
+    # Converte a coordenada de pixel para coordenada de tile (coluna, linha)
+    coluna = int(x // TILE_SIZE)
+    linha = int(y // TILE_SIZE)
+
+    # Verifica se a coordenada esta dentro dos limites do mapa
+    if not (0 <= linha < MAP_HEIGHT_IN_TILES and 0 <= coluna < MAP_WIDTH_IN_TILES):
+        return True # Considera fora do mapa como uma colisao
+
+    # Pega o ID do tile na camada de estruturas
+    tile_id = ESTRUTURAS_LAYOUT[linha][coluna]
+
+    # Verifica se o ID do tile esta na nossa lista de tiles solidos
+    if tile_id in TILES_SOLIDOS:
+        return True # Ha colisao
+
+    return False # Caminho livre
 
 def update(dt):
-    """
-    Esta funcao e chamada a cada frame pelo Pygame Zero.
-    'dt' e o tempo (em segundos) que passou desde o ultimo frame.
-    Usamos 'dt' para garantir que o movimento seja suave e consistente
-    em computadores de diferentes velocidades.
-    """
     # Declaramos todas as variaveis globais que a funcao vai modificar
-    global player_direction, is_attacking, attack_timer, attack_cooldown
+    global player_direction, is_attacking, attack_timer, attack_cooldown, footstep_timer
 
     if game_state == "jogo":
         # 1. ATUALIZA OS CRONOMETROS (SEMPRE)
@@ -367,81 +416,105 @@ def update(dt):
 
         # 2. LOGICA DE ACAO: ATACAR OU MOVER/DESCANSAR?
         
-        # <<< SE ESTIVER ATACANDO, TODA A LOGICA DE ATAQUE FICA AQUI DENTRO >>>
         if is_attacking:
             # --- LOGICA DE ANIMACAO DE ATAQUE (ROTACAO) ---
-            
-            # Posiciona a arma na mao do personagem (ponto de pivo)
+            # (Toda a sua logica de rotacao da arma continua aqui, sem mudancas)
             offset_x, offset_y = ARMA_OFFSETS[player_direction]
             arma.x = player.x + offset_x
             arma.y = player.y - (player.height / 2) + offset_y
             
-            # Calcula o progresso da animacao (de 0.0 a 1.0)
             progress = (ATTACK_DURATION - attack_timer) / ATTACK_DURATION
-            
-            # Interpola o angulo atual baseado no progresso
             current_angle = SWING_START_ANGLE + (SWING_END_ANGLE - SWING_START_ANGLE) * progress
             arma.angle = current_angle
             
-            # Garante que a imagem certa esta sendo usada durante o ataque
             if player_direction in ['frente', 'costas']:
-                arma.image = 'itens/axe_0118' # Substitua pelo seu nome de arquivo
+                arma.image = 'itens/axe_0118'
             else:
-                arma.image = 'itens/axe_0118' # Substitua pelo seu nome de arquivo
+                arma.image = 'itens/axe_0118'
         
-        # <<< SENAO (SE NAO ESTIVER ATACANDO), A LOGICA DE MOVIMENTO/DESCANSO FICA AQUI >>>
-        else:
+        else: # Se NAO estiver atacando, a logica de movimento/descanso fica aqui
+            
             # --- LOGICA DE MOVIMENTO DO PERSONAGEM ---
+            moved = False # Comeca como Falso a cada frame
+            
+            # Guarda a posicao antiga para a colisao
+            old_x, old_y = player.pos
+
+            # Movimento Horizontal
             if keyboard.left:
                 player.x -= PLAYER_SPEED * dt
-                player.image ='heroi/persona_0087' # Seu sprite de personagem
                 player_direction = 'esquerda'
+                moved = True
             elif keyboard.right:
                 player.x += PLAYER_SPEED * dt
-                player.image ='heroi/persona_0087'
                 player_direction = 'direita'
+                moved = True
 
+            if verificar_colisao(player.x, player.y):
+                player.x = old_x
+
+            # Movimento Vertical
             if keyboard.up:
                 player.y -= PLAYER_SPEED * dt
-                player.image ='heroi/persona_0087'
                 player_direction = 'costas'
+                moved = True
             elif keyboard.down:
                 player.y += PLAYER_SPEED * dt
-                player.image ='heroi/persona_0087'
                 player_direction = 'frente'
+                moved = True
+                
+            if verificar_colisao(player.x, player.y):
+                player.y = old_y
+
+            # Atualiza a imagem do personagem
+            player.image = 'heroi/persona_0087'
+
+            # --- LOGICA PARA SOM DE PASSOS ---
+            if moved:
+                # Se o personagem se moveu, avanca o cronometro
+                footstep_timer += dt
+                if footstep_timer >= FOOTSTEP_INTERVAL:
+                    sounds.move_run.play() # Toca o som de passo
+                    footstep_timer = 0.0 # Zera o cronometro
+            else:
+                # Se o personagem esta parado, zera o cronometro
+                footstep_timer = 0.0
 
             # --- ATUALIZACAO DA ARMA (EM POSICAO DE DESCANSO) ---
             offset_x, offset_y = ARMA_OFFSETS[player_direction]
             arma.x = player.x + offset_x
             arma.y = player.y - (player.height / 2) + offset_y
+            arma.angle = 0 # Reseta o angulo
             
-            # Reseta o angulo da arma e atualiza sua imagem/orientacao
-            arma.angle = 0
-            if player_direction == 'frente':
-                arma.image = 'itens/axe_0118'
-            elif player_direction == 'costas':
-                arma.image = 'itens/axe_0118'
-            elif player_direction == 'direita':
-                arma.image = 'itens/axe_0118'
+            # (Sua logica de imagem e flip da arma em descanso vai aqui)
+            if player_direction == 'direita':
                 arma.flip_x = False
             elif player_direction == 'esquerda':
-                arma.image = 'itens/axe_0118'
                 arma.flip_x = True
-    # --- ATUALIZACAO DOS INIMIGOS ---
+
+
+         # --- ATUALIZACAO DOS INIMIGOS COM COLISAO INTELIGENTE ---
         for inimigo in inimigos:
-            # Calcula a direcao para o jogador
+            old_inimigo_x, old_inimigo_y = inimigo.pos
+
             direcao_x = player.x - inimigo.x
             direcao_y = player.y - inimigo.y
-
-            # Normaliza o vetor de direcao (para que a velocidade seja constante)
             distancia = (direcao_x**2 + direcao_y**2)**0.5
             if distancia > 0:
                 direcao_x /= distancia
                 direcao_y /= distancia
-
-            # Move o inimigo na direcao do jogador
+            
+            # Tenta mover no eixo X
             inimigo.x += direcao_x * ENEMY_SPEED * dt
+            # Se colidir no eixo X, desfaz o movimento X
+            if verificar_colisao(inimigo.x, inimigo.y):
+                inimigo.x = old_inimigo_x
+
+            # Tenta mover no eixo Y
             inimigo.y += direcao_y * ENEMY_SPEED * dt
+            # Se colidir no eixo Y, desfaz o movimento Y
+            if verificar_colisao(inimigo.x, inimigo.y):
+                inimigo.y = old_inimigo_y
 
 # --- FUNÇÕES DE INPUT (EVENTOS) ---
 def on_mouse_down(pos):
@@ -479,6 +552,7 @@ def on_key_down(key):
             is_attacking = True
             attack_timer = ATTACK_DURATION
             attack_cooldown = ATTACK_COOLDOWN_TIME
+            sounds.atack.play()
 
 # Agenda a funcao spawn_inimigo para ser chamada a cada ENEMY_SPAWN_TIME segundos
 clock.schedule_interval(spawn_inimigo, ENEMY_SPAWN_TIME)
@@ -497,5 +571,4 @@ desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_ROCK_MAPPING, top_x=8, top_y=35)
 desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=25, top_y=22)
 desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=30, top_y=32)
 desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=2)
-# Inicia o jogo
 pgzrun.go()
