@@ -1,6 +1,6 @@
 # Kodland Teste Para Tutor
 Este é um jogo de aventura 2D com visão de cima (top-down), desenvolvido em Python com a biblioteca Pygame Zero. O projeto foi construído passo a passo, implementando funcionalidades essenciais de um jogo, desde o menu inicial até a interação com inimigos.
-
+![Screenshot do projeto](tela_inicial.jpg)
 ## Estrtura de Pasta
 Estrutura do Projeto
 Para que o jogo funcione corretamente, os arquivos devem seguir esta estrutura:
@@ -24,4 +24,3 @@ start/
 │   └── move_run.ogg
 └── music/              
     └── song.mp3
-´´´

@@ -242,14 +242,11 @@ inimigos = []  # Lista vazia para guardar todos os Actors dos inimigos
 ENEMY_SPEED = 50  # Velocidade dos inimigos, um pouco mais lenta que o jogador
 ENEMY_SPAWN_TIME = 3.0 # Tempo em segundos para um novo inimigo aparecer
 
-
-# --- CRIAÇÃO DAS CAMADAS DO MAPA ---
-# 1. Criamos os mapas GRANDES, do tamanho da tela.
 CHAO_LAYOUT = [[0 for _ in range(MAP_WIDTH_IN_TILES)] for _ in range(MAP_HEIGHT_IN_TILES)]
 ESTRUTURAS_LAYOUT = [[-1 for _ in range(MAP_WIDTH_IN_TILES)] for _ in range(MAP_HEIGHT_IN_TILES)]
 
 # --- DEFINICAO DAS PLANTAS DOS OBJETOS ---
-def desenhar_objeto_por_id(layout_principal, planta_numerica, top_x, top_y):
+def draw_object_id(layout_principal, planta_numerica, top_x, top_y):
     """
     Versao simplificada que desenha um objeto usando uma planta com IDs de tile.
     - layout_principal: A matriz onde vamos desenhar (ex: ESTRUTURAS_LAYOUT).
@@ -370,14 +367,14 @@ def spawn_inimigo():
         inimigo.y = random.randint(0, HEIGHT)
 
     # Verifica se o local de nascimento e solido. Se for, tenta de novo.
-    if verificar_colisao(inimigo.x, inimigo.y):
+    if verify_colision(inimigo.x, inimigo.y):
         print("Local de spawn bloqueado. Tentando de novo no proximo ciclo.")
         return # Pula a criacao deste inimigo e espera o proximo ciclo
 
     inimigos.append(inimigo)
     print(f"Novo inimigo criado em ({int(inimigo.x)}, {int(inimigo.y)})")
 
-def verificar_colisao(x, y):
+def verify_colision(x, y):
     """
     Verifica se a coordenada de pixel (x, y) esta sobre um tile solido.
     Retorna True se houver colisao, False se nao houver.
@@ -450,7 +447,7 @@ def update(dt):
                 player_direction = 'direita'
                 moved = True
 
-            if verificar_colisao(player.x, player.y):
+            if verify_colision(player.x, player.y):
                 player.x = old_x
 
             # Movimento Vertical
@@ -463,7 +460,7 @@ def update(dt):
                 player_direction = 'frente'
                 moved = True
                 
-            if verificar_colisao(player.x, player.y):
+            if verify_colision(player.x, player.y):
                 player.y = old_y
 
             # Atualiza a imagem do personagem
@@ -507,13 +504,13 @@ def update(dt):
             # Tenta mover no eixo X
             inimigo.x += direcao_x * ENEMY_SPEED * dt
             # Se colidir no eixo X, desfaz o movimento X
-            if verificar_colisao(inimigo.x, inimigo.y):
+            if verify_colision(inimigo.x, inimigo.y):
                 inimigo.x = old_inimigo_x
 
             # Tenta mover no eixo Y
             inimigo.y += direcao_y * ENEMY_SPEED * dt
             # Se colidir no eixo Y, desfaz o movimento Y
-            if verificar_colisao(inimigo.x, inimigo.y):
+            if verify_colision(inimigo.x, inimigo.y):
                 inimigo.y = old_inimigo_y
 
 # --- FUNÇÕES DE INPUT (EVENTOS) ---
@@ -543,10 +540,6 @@ def on_key_down(key):
         game_state = "menu"
     # Inicia o ataque ao pressionar a barra de espaco
     if key == keys.SPACE:
-        # So pode atacar se:
-        # 1. Estiver na tela do jogo
-        # 2. Nao estiver atacando no momento
-        # 3. O tempo de cooldown ja tiver acabado
         if game_state == "jogo" and not is_attacking and attack_cooldown <= 0:
             print("Ataque iniciado!") # Mensagem de teste
             is_attacking = True
@@ -557,18 +550,18 @@ def on_key_down(key):
 # Agenda a funcao spawn_inimigo para ser chamada a cada ENEMY_SPAWN_TIME segundos
 clock.schedule_interval(spawn_inimigo, ENEMY_SPAWN_TIME)
 # Carimba o castelo na posicao (coluna=10, linha=5)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=10, top_y=5)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=15, top_y=10)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=20, top_y=10)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=15)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=35, top_y=20)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=40, top_y=15)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, TREE_GREEN_MAPPING, top_x=20, top_y=5)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, TREE_YELLOW_MAPPING, top_x=9, top_y=15)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=5, top_y=8)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=3, top_y=2)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_ROCK_MAPPING, top_x=8, top_y=35)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=25, top_y=22)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=30, top_y=32)
-desenhar_objeto_por_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=2)
+draw_object_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=10, top_y=5)
+draw_object_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=15, top_y=10)
+draw_object_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=20, top_y=10)
+draw_object_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=15)
+draw_object_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=35, top_y=20)
+draw_object_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=40, top_y=15)
+draw_object_id(ESTRUTURAS_LAYOUT, TREE_GREEN_MAPPING, top_x=20, top_y=5)
+draw_object_id(ESTRUTURAS_LAYOUT, TREE_YELLOW_MAPPING, top_x=9, top_y=15)
+draw_object_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=5, top_y=8)
+draw_object_id(ESTRUTURAS_LAYOUT, BARN_MAPPING, top_x=3, top_y=2)
+draw_object_id(ESTRUTURAS_LAYOUT, HOUSE_ROCK_MAPPING, top_x=8, top_y=35)
+draw_object_id(ESTRUTURAS_LAYOUT, HOUSE_MAPPING, top_x=25, top_y=22)
+draw_object_id(ESTRUTURAS_LAYOUT, CASTLE_MAPPING, top_x=30, top_y=32)
+draw_object_id(ESTRUTURAS_LAYOUT, ROAD_MAPPING, top_x=25, top_y=2)
 pgzrun.go()
